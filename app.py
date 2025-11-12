@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
+import requests
 import os
 
 app = Flask(__name__)
@@ -13,16 +13,14 @@ def get_cloverpool_data():
     data = []
 
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(url, timeout=60000)
-            page.wait_for_selector("table tbody tr")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
 
-            html = page.content()
-            browser.close()
-
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(response.content, "html.parser")
         rows = soup.select("table tbody tr")
 
         for row in rows:
@@ -41,6 +39,18 @@ def get_cloverpool_data():
 
     except Exception as e:
         return jsonify({"error": f"Falha ao coletar dados: {e}"}), 500
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "healthy", "message": "API está funcionando!"})
+
+@app.route('/')
+def home():
+    return jsonify({
+        "message": "Cloverpool API está rodando!",
+        "endpoint": "/api/cloverpool",
+        "health_check": "/health"
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
