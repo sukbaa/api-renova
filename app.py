@@ -3,6 +3,8 @@ from flask_cors import CORS
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -17,20 +19,17 @@ def get_cloverpool_data():
     data = []
 
     try:
-        # Configura Chrome headless
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--remote-debugging-port=9222")
         
-        # Usa Chrome do sistema (já instalado no Render)
-        driver = webdriver.Chrome(options=chrome_options)
+        # Usa webdriver-manager para instalar ChromeDriver automaticamente
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         
         driver.get(url)
         
-        # Espera a tabela carregar
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr"))
         )
