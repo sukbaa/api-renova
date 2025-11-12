@@ -40,18 +40,6 @@ def get_cloverpool_data():
     except Exception as e:
         return jsonify({"error": f"Falha ao coletar dados: {e}"}), 500
 
-@app.route('/health', methods=['GET'])
-def health():
-    return jsonify({"status": "healthy", "message": "API está funcionando!"})
-
-@app.route('/')
-def home():
-    return jsonify({
-        "message": "Cloverpool API está rodando!",
-        "endpoint": "/api/cloverpool",
-        "health_check": "/health"
-    })
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
