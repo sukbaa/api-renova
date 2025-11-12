@@ -1,7 +1,11 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import os
 
 app = Flask(__name__)
@@ -13,14 +17,26 @@ def get_cloverpool_data():
     data = []
 
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(url, timeout=60000)
-            page.wait_for_selector("table tbody tr")
-
-            html = page.content()
-            browser.close()
+        # Configura Chrome headless
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--remote-debugging-port=9222")
+        
+        # Usa Chrome do sistema (já instalado no Render)
+        driver = webdriver.Chrome(options=chrome_options)
+        
+        driver.get(url)
+        
+        # Espera a tabela carregar
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr"))
+        )
+        
+        html = driver.page_source
+        driver.quit()
 
         soup = BeautifulSoup(html, "html.parser")
         rows = soup.select("table tbody tr")
