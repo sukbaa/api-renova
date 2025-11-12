@@ -1,11 +1,32 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
 import os
 
 app = Flask(__name__)
 CORS(app)
+
+def install_playwright():
+    """Força instalação do Playwright se não estiver disponível"""
+    try:
+        from playwright.sync_api import sync_playwright
+        # Tenta usar o Playwright
+        with sync_playwright() as p:
+            browsers = p.chromium.launch(headless=True)
+            browsers.close()
+        return True
+    except Exception as e:
+        print(f"Playwright não disponível: {e}")
+        # Instala o Playwright
+        try:
+            import subprocess
+            import sys
+            subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"])
+            print("Chromium instalado com sucesso!")
+            return True
+        except Exception as install_error:
+            print(f"Falha ao instalar Chromium: {install_error}")
+            return False
 
 @app.route('/api/cloverpool', methods=['GET'])
 def get_cloverpool_data():
@@ -13,6 +34,12 @@ def get_cloverpool_data():
     data = []
 
     try:
+        # Verifica/instala Playwright
+        if not install_playwright():
+            return jsonify({"error": "Playwright não disponível"}), 500
+            
+        from playwright.sync_api import sync_playwright
+
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
